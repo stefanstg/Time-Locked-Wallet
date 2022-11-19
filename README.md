@@ -1,8 +1,6 @@
-# Blockchain-Project
+# Time Locked Wallet
 
-Time Locked Wallet
-
-Short description
+##Short description
 
          The idea behind time-locked wallets is to lock the funds for a set period of time. The amount locked in the wallet can only be withdrawn when the set date is passed and only by the authorized person/beneficiary. 
 Technical specification
@@ -14,10 +12,10 @@ We will implement a wallet that would keep crypto assets for a certain amount of
 The timelock is based upon a queue that will use a hash of the address, amount and time parameters.
 To ensure that the project is working  as expected we will create test to check if the smart contract meets all the time lock requirements: enqueue token minting & cancel a queued mint. 
 
-Technologies
+##Technologies
       Etherium, Node.js, Truffle Framework, Solidity, Web3.js
  
-Security policies
+##Security policies
 
 Attacks on crypto wallets are based on:
 •	stealing the locally stored passphrase or private key ⇒ prevention with data at rest encryption
@@ -25,7 +23,7 @@ Attacks on crypto wallets are based on:
 •	MITM attack ⇒ data in transit should be protected with AES-256 encryption, and secure socket layer (SSL) / transport layer security (TLS) must be strictly enforced for all communications.
 •	wallet theft ⇒ enforce smart risk control withdraw system & 2FA authentication
 
-Motivation
+##Motivation
 
  Prevention of selling assets when market crashes
 People tend to sell their crypto. In this way, people won’t be able to withdraw for a certain amount of time.
