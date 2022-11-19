@@ -2,8 +2,9 @@
 
 ## Short description
 
-     The idea behind time-locked wallets is to lock the funds for a set period of time. The amount locked in the wallet can only be withdrawn when the set date is passed and only by the authorized person/beneficiary. 
-Technical specification
+     The idea behind time-locked wallets is to lock the funds for a set period of time. The amount locked in the wallet can only be withdrawn when the set date is passed and only by the authorized person/beneficiary.
+     
+## Technical specification
 
 We will implement a wallet that would keep crypto assets for a certain amount of time as a web app (https://eth-hot-wallet.com/).
      One container will be dealing with keystore operations. The ETH-Lightwallet package provides the keystore. All related operations including keys, seeds, encryption, importing, exporting are done in this section. (it will be adapted along the way depending on the evolution).
