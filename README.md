@@ -10,7 +10,7 @@
 
 #### Attacks on crypto wallets are based on:
 •	stealing the locally stored passphrase or private key ⇒ prevention with data at rest encryption </br>
-•	overlay attack ⇒ restrict screen sharing
-•	MITM attack ⇒ data in transit should be protected with AES-256 encryption, and secure socket layer (SSL) / transport layer security (TLS) must be strictly enforced for all communications.
-•	wallet theft ⇒ enforce smart risk control withdraw system & 2FA authentication
+•	overlay attack ⇒ restrict screen sharing  </br>
+•	MITM attack ⇒ data in transit should be protected with AES-256 encryption, and secure socket layer (SSL) / transport layer security (TLS) must be strictly enforced for all communications. </br>
+•	wallet theft ⇒ enforce smart risk control withdraw system & 2FA authentication </br>
 
