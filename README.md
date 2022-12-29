@@ -14,3 +14,6 @@
 •	MITM attack ⇒ data in transit should be protected with AES-256 encryption, and secure socket layer (SSL) / transport layer security (TLS) must be strictly enforced for all communications. </br>
 •	wallet theft ⇒ enforce smart risk control withdraw system & 2FA authentication </br>
 
+100000000000000000000
+180143885193905760000000000
+
