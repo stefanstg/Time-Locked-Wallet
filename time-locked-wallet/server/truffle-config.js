@@ -1,3 +1,6 @@
+const HDWalletProvider = require('@truffle/hdwallet-provider');
+
+
 /**
  * Use this file to configure your truffle project. It's seeded with some
  * common settings for different networks and features like migrations,
@@ -69,6 +72,14 @@ module.exports = {
      port: 7545,            // Standard Ethereum port (default: none)
      network_id: "*",       // Any network (default: none)
     },
+    goerli: {
+      provider: () => {
+        return new HDWalletProvider("suffer cheap field paper snap pact finger tone network hello layer cherry", 'https://goerli.infura.io/v3/b82288efa48c48fc9a4d1d393d08d9eb')
+      },
+      network_id: '5', // eslint-disable-line camelcase
+      gas: 4465030,
+      gasPrice: 10000000000,
+    },
     //
     // An additional network, but with some advanced options…
     // advanced: {
@@ -106,7 +117,7 @@ module.exports = {
   // Configure your compilers
   compilers: {
     solc: {
-      version: "0.8.17" // Fetch exact version from solc-bin (default: truffle's version)
+      version: "0.8.16" // Fetch exact version from solc-bin (default: truffle's version)
       // docker: true,        // Use "0.5.1" you've installed locally with docker (default: false)
       // settings: {          // See the solidity docs for advice about optimization and evmVersion
       //  optimizer: {

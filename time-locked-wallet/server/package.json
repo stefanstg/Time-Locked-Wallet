@@ -16,6 +16,7 @@
   },
   "keywords": [],
   "devDependencies": {
+    "@truffle/hdwallet-provider": "^2.1.4",
     "nodemon": "^2.0.20"
   }
 }

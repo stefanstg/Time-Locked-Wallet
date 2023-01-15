@@ -1,3 +1,4 @@
+
 .App {
   text-align: center;
 }
@@ -35,4 +36,36 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+.left-rounded{
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+}
+
+.w-15{
+  width: 15%;
+}
+
+.w-65{
+  width: 65%;
+}
+
+.transparent_bg{
+  position:absolute;
+  left: 0px;
+  top: 0px;
+  width: 100%;
+  height: 100%;
+  background-color: grey;
+  opacity: 0.4;
+  z-index: 5;
+}
+
+.error_modal_title{
+  color:red;
+}
+
+.z_index_6{
+  z-index: 6;
 }

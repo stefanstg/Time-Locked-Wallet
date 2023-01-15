@@ -1,183 +1,179 @@
-//SPDX-License-Identifier: UNLICENSED
-pragma solidity >=0.8.0 <0.9.0;
+//SPDX-License-Identifier:UNLICENSED
 
-contract TimeLock{
-    address public owner; // owner of the contract
+pragma solidity ^0.8.0;
 
-    mapping(bytes32 => bool) public txQueued;
+error NotOwnerError();
+error AlreadyQueuedError(bytes32 txId);
+error TestError(bytes32 txId);
+error TimestampNotInRangeError(uint blockTimestamp, uint timestamp);
+error NotQueuedError(bytes32 txId);
+error TimestampNotPassedError(uint blockTimestmap, uint timestamp);
+error TimestampExpiredError(uint blockTimestamp, uint expiresAt);
+error TxFailedError();
+error NoValidAddress(address _target);
 
-    uint public constant MIN_DELAY = 10; // 10 sec usually 1 day - 2 weeks
-    uint public constant MAX_DELAY = 1000; // usually 30 days
-    uint public constant GRACE_PERIOD = 1000; 
+contract TimeLock {
+    
 
     event Queue(
         bytes32 indexed txId,
-        address indexed target, // address of contract
-        uint value,   // amount to send
-        string func, // function
-        bytes data, // param of function
-        uint timestamp   // time when transaction can be executed
+        address indexed target,
+        uint value,
+        uint timestamp,
+        uint start_timestamp
+        
+    );
+    event Execute(
+        bytes32 indexed txId,
+        address indexed target,
+        uint value,
+        uint timestamp,
+        uint start_timestamp
     );
 
-     event Execute(
-        bytes32 indexed txId,
-        address indexed target, // address of contract
-        uint value,   // amount to send
-        string func, // function
-        bytes data, // param of function
-        uint timestamp   // time when transaction can be executed
+    event Value(
+        uint256 val
     );
 
     event Cancel(bytes32 indexed txId);
 
-    error AlreadyQueuedError(bytes32 txId);
-    error NotOwnerError(); 
-    error TimestampNotInRangeError(uint blockTimestamp, uint timestamp); 
-    error NotQueuedError(bytes32 txId);
-    error TimestampNotPassedError(uint blockTimestamp, uint timestamp);
-    error TimestampExpiredError(uint blockTimestamp, uint expiresAt);
-    error TxFailedError();
+    uint public constant COMMISION_RATE = 10; // seconds
+   
 
-    constructor(){
+    struct locked{
+            uint256 expire;
+            uint256 amount;
+        }
+
+    mapping(address => locked) users;
+
+    address public owner;
+    // tx id => queued
+    mapping(bytes32 => bool) public queued;
+
+    constructor() {
         owner = msg.sender;
     }
 
-    receive() external payable {} // set up for contract to receive ETH
-
-    modifier onlyOwner(){
-        if(msg.sender != owner){
+    modifier onlyOwner() {
+        if (msg.sender != owner) {
             revert NotOwnerError();
         }
-        _; // execute the rest of the code
+        _;
     }
 
-   function getTxId( // compute the transaction id
-        address _target, // address of contract
-        uint _value,   // amount to send
-        string calldata _func, // function
-        bytes calldata _data, // param of function
-        uint _timestamp   // time when transaction can be executed
-   ) public pure returns (bytes32 txId){
-        return keccak256( // calculate hash of param
-            abi.encode(
-                _target, _value, _func, _data, _timestamp
-            )
-        );
-   }
+    receive() external payable {}
 
-    function queue(  // queue a transaction
-        address _target, // address of contract
-        uint _value,   // amount to send
-        string calldata _func, // function
-        bytes calldata _data, // param of function
-        uint _timestamp   // time when transaction can be executed
-    ) external onlyOwner{
+    function getTxId(
+        address _target,
+        uint _value,
+        uint _timestamp,
+        string memory _passCode,
+        uint start_timestamp
+    ) public pure returns (bytes32) {
+        return keccak256(abi.encode(_target, _value, _timestamp, _passCode, start_timestamp));
+    }
 
-        bytes32 txId = getTxId(_target, _value, _func, _data, _timestamp); // transaction id
+    /**
+     * @param _value Amount of ETH to send
+     * @param  _passCode Safety passCode to be able to unlock the funds
+     * @param _timestamp The timestamp moment after which the transaction can be executed.
+     * @param start_timestamp The moment of the lock
+     * @param _passCode A password for enhancing the security of the lock and that allows to unlock the money sooner
 
-        // check if transaction is queued
-        if(txQueued[txId]){
-            revert AlreadyQueuedError(txId);
+     */
+    function queue(
+        uint _value,
+        uint _timestamp,
+        uint start_timestamp,
+        string memory _passCode
+    ) external payable  returns (bytes32 txId) {
+
+        txId = getTxId(msg.sender, _value, _timestamp, _passCode, start_timestamp);
+        if (queued[txId]) {
+            revert("Acest lock exista deja!!");
         }
 
-        // check timestamp
-        // ---|------------------|---------------|--------
-        //   block         block + min     block + max
-        if(_timestamp < block.timestamp + MIN_DELAY || 
-           _timestamp > block.timestamp + MAX_DELAY 
-        ){
-            revert TimestampNotInRangeError(block.timestamp, _timestamp);
+        queued[txId] = true;
+
+        locked storage userInfo = users[msg.sender];
+        //GRESIT DE CORECTAT!!!!
+        userInfo.expire = block.timestamp + _timestamp;
+        userInfo.amount = msg.value;
+
+        emit Queue(txId, msg.sender, _value, _timestamp, start_timestamp);
+    }
+
+    function transferFunds(
+        address _target
+    ) public payable returns(bool) {
+        //revert NoValidAddress(_target);
+
+        if(_target == address(0)){
+            revert NoValidAddress(_target);
         }
 
-        // queue tx 
-        txQueued[txId] = true;
+        payable(_target).transfer(msg.value);
 
-        // emit the event
-        emit Queue(txId, _target, _value, _func, _data, _timestamp);
-        
-    }    
+        return true;
+    }
 
     function execute(
-        address _target, // address of contract
-        uint _value,   // amount to send
-        string calldata _func, // function
-        bytes calldata _data, // param of function
-        uint _timestamp   // time when transaction can be executed
-    ) external payable onlyOwner returns (bytes memory){ // execute transaction after time passed
-        
-        bytes32 txId = getTxId(_target, _value, _func, _data, _timestamp); // transaction id
-        
-        // check tx is queued
-        if(!txQueued[txId]){
-            revert NotQueuedError(txId);
+        uint _value,
+        uint _timestamp,
+        uint start_timestamp,
+        string memory _passCode
+    ) external payable  {
+        bytes32 txId = getTxId(msg.sender, _value, _timestamp, _passCode, start_timestamp);
+
+
+        if (!queued[txId]) {
+            revert("Acesta nu este un lock valid! Adresa sau parola de deblocare nu sunt corecte!");
         }
 
-        // check block.timestamp > _timestamp
-        if(block.timestamp < _timestamp){
-            revert TimestampNotPassedError(block.timestamp, _timestamp);
+        if(block.timestamp <= _timestamp){
+            revert(string(bytes.concat(bytes("Perioada de timp nu a expirat inca! Mai trebuie sa asteptati!"), "-", bytes(string(abi.encode(block.timestamp - _timestamp))))) );
         }
 
-        // check if transaction is not "expired"
-        // ---|-----------------------|------------------------
-        //   timestamp      timestamp + grace period    
-        if(block.timestamp > _timestamp + GRACE_PERIOD){
-            revert TimestampExpiredError(block.timestamp, _timestamp + GRACE_PERIOD);
-        }
+        locked storage userInfo = users[msg.sender];
+        uint256 value = userInfo.amount;
 
-        // delete tx from queue
-        txQueued[txId] = false;
+        userInfo.expire = 0;
+        userInfo.amount = 0;
+        queued[txId] = false;
 
-        bytes memory data;
+        payable(msg.sender).transfer(value);
 
-        if(bytes(_func).length > 0){
-            data = abi.encodePacked(
-                bytes4(keccak256(bytes(_func))), _data // hash(4 bytes of function and append data)
-            );
-        } else{
-            data = _data;
-        }
-
-        // excute the tx
-        (bool sent, bytes memory response) = _target.call{value: _value}(data);
-        if(!sent){
-            revert TxFailedError();
-        }
-
-        emit Execute(txId, _target, _value, _func, _data, _timestamp);
-
-        return response;
+        emit Execute(txId, msg.sender, _value, _timestamp, start_timestamp);
 
     }
 
-    function cancel(bytes32 _txId) external onlyOwner {
-        if(!txQueued[_txId]){
+    function cancel(bytes32 _txId) external  {
+        if (!queued[_txId]) {
             revert NotQueuedError(_txId);
         }
 
-        txQueued[_txId] = false;
+        queued[_txId] = false;
 
         emit Cancel(_txId);
-
-    }  
-}
-
-contract TestTimeLock{
-    address public timeLock;
-
-    constructor(address _timeLock){
-        timeLock = _timeLock;
-    }
-
-    function test() external {
-        require(msg.sender == timeLock, "not timelock"); //called only by the TimeLock contract
-        // more code such as
-        // - upgrade contract
-        // - transfer funds
-        
     }
 
     function getTimestamp() external view returns (uint){
-        return block.timestamp + 100;
+        
+        //emit Value(block.timestamp);
+        return block.timestamp;
+
     }
 }
 
+//  Fie t = 100 ( in cazu de mai sus)
+//  Fie x intervalu ales dupa cat timp vrea sa scoata
+//  x = 10
+//  => p ( procentul ) = (t-x)/100
+//  si bagam un if else
+//  if p>=90 eth=50
+//  elif p>=70 eth=40
+//  elif op>=50 eth=30
+//  elif p>=30 eth=20
+//  elif p < 10 eth 10
+//  Ne auzim?
