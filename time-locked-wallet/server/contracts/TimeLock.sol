@@ -5,10 +5,8 @@ pragma solidity ^0.8.0;
 error NotOwnerError();
 error AlreadyQueuedError(bytes32 txId);
 error TestError(bytes32 txId);
-error TimestampNotInRangeError(uint blockTimestamp, uint timestamp);
 error NotQueuedError(bytes32 txId);
 error TimestampNotPassedError(uint blockTimestmap, uint timestamp);
-error TimestampExpiredError(uint blockTimestamp, uint expiresAt);
 error TxFailedError();
 error NoValidAddress(address _target);
 
@@ -35,18 +33,15 @@ contract TimeLock {
         uint256 val
     );
 
-    event Cancel(bytes32 indexed txId);
+    event Cancel( 
+        bytes32 indexed txId,
+        address indexed target,
+        uint value,
+        uint timestamp,
+        uint start_timestamp);
 
-    uint public constant COMMISION_RATE = 10; // seconds
+    uint public MIN_COMMISION_RATE = 20; 
    
-
-    struct locked{
-            uint256 expire;
-            uint256 amount;
-        }
-
-    mapping(address => locked) users;
-
     address public owner;
     // tx id => queued
     mapping(bytes32 => bool) public queued;
@@ -96,26 +91,20 @@ contract TimeLock {
 
         queued[txId] = true;
 
-        locked storage userInfo = users[msg.sender];
-        //GRESIT DE CORECTAT!!!!
-        userInfo.expire = block.timestamp + _timestamp;
-        userInfo.amount = msg.value;
-
         emit Queue(txId, msg.sender, _value, _timestamp, start_timestamp);
     }
 
     function transferFunds(
-        address _target
-    ) public payable returns(bool) {
-        //revert NoValidAddress(_target);
+        address _target,
+        uint _value
+    ) public payable {
 
         if(_target == address(0)){
-            revert NoValidAddress(_target);
+            revert("Adresa aceasta nu exista!!!");
         }
 
-        payable(_target).transfer(msg.value);
+        payable(_target).transfer(_value);
 
-        return true;
     }
 
     function execute(
@@ -132,48 +121,68 @@ contract TimeLock {
         }
 
         if(block.timestamp <= _timestamp){
-            revert(string(bytes.concat(bytes("Perioada de timp nu a expirat inca! Mai trebuie sa asteptati!"), "-", bytes(string(abi.encode(block.timestamp - _timestamp))))) );
+            revert("Perioada de timp nu a expirat inca! Mai trebuie sa asteptati!");
         }
 
-        locked storage userInfo = users[msg.sender];
-        uint256 value = userInfo.amount;
-
-        userInfo.expire = 0;
-        userInfo.amount = 0;
         queued[txId] = false;
+        //Eliberam memoria pentru a nu creste costul executiei unei functii
 
-        payable(msg.sender).transfer(value);
+        //payable(msg.sender).transfer(_value);
+        transferFunds(msg.sender, _value);
 
         emit Execute(txId, msg.sender, _value, _timestamp, start_timestamp);
 
     }
 
-    function cancel(bytes32 _txId) external  {
-        if (!queued[_txId]) {
-            revert NotQueuedError(_txId);
+    function cancel(
+        uint _value,
+        uint _timestamp,
+        uint start_timestamp,
+        string memory _passCode
+    ) external payable {
+        bytes32 txId = getTxId(msg.sender, _value, _timestamp, _passCode, start_timestamp);
+
+        if (!queued[txId]) {
+            revert("Acesta nu este un lock valid! Adresa sau parola de deblocare nu sunt corecte!");
+        }
+        emit Cancel(txId, msg.sender, _value, _timestamp, start_timestamp);
+        //Calculam cat la suta din timpul total reprezinta timpul scurs pana la operatia de cancel
+        uint x = ((block.timestamp - start_timestamp) / (_timestamp - start_timestamp)) * 100;
+        //Valoare minima a comisionului
+        uint commision = MIN_COMMISION_RATE;
+        
+        //Daca nu a trecut nici macar 1% din timpul stabilit se ia comisionul maxim adica 50%
+        if(x <= 1){
+            commision = 50;
         }
 
-        queued[_txId] = false;
+        //Comision inmtre 1% si 91% variaza liniar
+        if(x > 1 && x < 91){
+            commision = (1-x + 150) /3; 
+        }
 
-        emit Cancel(_txId);
+        uint commision_val = (_value * commision) / 100;
+
+        //O parte din valoarea blocata revine owner-ului contractului
+        transferFunds(owner, commision_val);
+        //payable(owner).transfer(commision_val);
+
+        //Ce ramane i se restituie celui care a facut lock-ul
+        transferFunds(msg.sender, _value - commision_val);
+        //payable(msg.sender).transfer(_value - commision_val);
+        
+
+        queued[txId] = false;
+
+        //delete queued[txId];
+        
+        emit Cancel(txId, msg.sender, _value, _timestamp, start_timestamp);
     }
 
     function getTimestamp() external view returns (uint){
         
-        //emit Value(block.timestamp);
         return block.timestamp;
 
     }
 }
 
-//  Fie t = 100 ( in cazu de mai sus)
-//  Fie x intervalu ales dupa cat timp vrea sa scoata
-//  x = 10
-//  => p ( procentul ) = (t-x)/100
-//  si bagam un if else
-//  if p>=90 eth=50
-//  elif p>=70 eth=40
-//  elif op>=50 eth=30
-//  elif p>=30 eth=20
-//  elif p < 10 eth 10
-//  Ne auzim?
