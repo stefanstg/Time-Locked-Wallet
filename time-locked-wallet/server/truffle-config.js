@@ -77,8 +77,7 @@ module.exports = {
         return new HDWalletProvider("suffer cheap field paper snap pact finger tone network hello layer cherry", 'https://goerli.infura.io/v3/b82288efa48c48fc9a4d1d393d08d9eb')
       },
       network_id: '5', // eslint-disable-line camelcase
-      gas: 4465030,
-      gasPrice: 10000000000,
+      
     },
     //
     // An additional network, but with some advanced options…

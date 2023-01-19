@@ -13,7 +13,9 @@ function App() {
   const [data, setData] = React.useState(null);
   const [valueToLock, setValToLock] = React.useState('');
   const [timeToLock, setTimeToLock] = React.useState('');
+  const [passToLock, setPassToLock] = React.useState('');
   const [timeLockRef, setTimeToLockRef] = React.useState(null);
+  const [transactions, setTransactions] = React.useState([]);
   const [tx, SetTx] = React.useState([]);
   const [blockTimeStamp, setBlockTimeStamp] = React.useState(0);
   const [web3, setW3] = React.useState();
@@ -29,13 +31,6 @@ function App() {
         //console.log(await w3.eth.getAccounts());
     
         const myContract = await new w3.eth.Contract(AccountInfo.abi, AccountInfo.networks[5].address);
-    
-        //console.log(await myContract.methods.getBalanceOf("0xA21c60bB8b4984f484f26E13a6Ac3DA94f3B0aE8").call());
-
-        // await w3.eth.getBalance("0x6eD9a5465927f53D7Df38Fefd0b561183Ce97cf2", (err, balance) => { 
-        //   console.log("0x6eD9a5465927f53D7Df38Fefd0b561183Ce97cf2 Balance: ", w3.utils.fromWei(balance)) 
-        //   setData(w3.utils.fromWei(balance));
-        // });
 
         const TimeLockContract = await new w3.eth.Contract(TimeLock.abi, TimeLock.networks[5].address);
 
@@ -55,26 +50,35 @@ function App() {
     setValToLock(e.target.value);
   }
 
-  const handleBlockTimeStamp = (e) => {
-    setBlockTimeStamp(e.target.value);
+  const handleTimeToLock = (e) => {
+    setTimeToLock(e.target.value);
   }
+
 
   const handleAccountFromChange = (e) =>{
     setAccountFrom({privateKey: e.target.value})
   }
+
   const handleErros = (err) => {
-    
+    console.log(JSON.stringify(err))
     if(JSON.stringify(err).indexOf("insufficient") != -1){
       setErrMsg("Nu aveti suficiente fonduri pentru a executa aceasta tranzactie!");
 
     }else{
-      if (typeof err === 'string' || err instanceof String) setErrMsg(err);
-      else setErrMsg(JSON.stringify(err))
+      if (typeof err === 'string' || err instanceof String) {
+        console.log(err)
+        
+        setErrMsg(err);
+      }
+      else setErrMsg("Nu aveti suficiente fonduri pentru a executa aceasta tranzactie!")
 
     }
 
     setShowErrModal(true);
   }
+
+
+  //LOCK FUNDS
   const lockFunds = async (e) => {
     
     if(valueToLock < 0.01){
@@ -82,50 +86,35 @@ function App() {
       return;
     }
 
-    // const accountFrom = {
-    //   privateKey: '75e8dd31b55bb5b6dd14d86f5be261ab71301ff43dd7cf061ccb580f59ea9add'
-    // }
-    
-    //console.log(await w3.eth.getAccounts());
+
+    if(timeToLock < 20){
+      handleErros("Trebuie ca timpul ales sa fie mai mare de 20s !");
+      return;
+    }
+
+    if(passToLock.length < 5 ){
+      handleErros("Trebuie ca parola sa fie aiba cel putin 5 caractere");
+      return;
+    }
 
     const w3 = web3;
 
-
-    //window.ethereum.request({method: "eth_requestAccounts"});
-
     const timestamp = await timeLockRef.methods.getTimestamp().call();
 
-    setTimeToLock(timestamp);
+    //setTimeToLock(timestamp);
 
     console.log(timestamp);
-
-    // timeLockRef.methods.queue(TimeLock.networks[5].address, "0" ,"test()", "0x00", timestamp )
-    //   .send({
-    //     from:"0xa758E8260Fc8fC6e8e8afA9A11645Bb1EA0337Ac",
-    //     value:"10000000000000000",
-    //     gas: "6721800",
-    // },
-    // function(err, result){
-    //   if(err){
-    //     //console.log(JSON.stringify(err.data[0].reason));
-    //     for(var key in err.data){
-    //       console.log(err.data[key]);
-    //     }
-    //   }
-    //   console.log(result);
-
-    // });
-
-    const incrementTx = timeLockRef.methods.queue(Web3.utils.toHex(Web3.utils.toWei(valueToLock, 'ether')), 1673734626 ,1673734826, "ceva")
+    const value  = Web3.utils.toHex(Web3.utils.toWei(valueToLock, 'ether'));
+    console.log(valueToLock);
+    const incrementTx = timeLockRef.methods.queue(value, timestamp , timestamp + timeToLock, passToLock);
     w3.eth.handleRevert = true
-    //incrementTx.handleRevert =true;
    
     await w3.eth.accounts.signTransaction(
       {
         to: TimeLock.networks[5].address,
         data: incrementTx.encodeABI(),
-        gas: "6721800",
-        value: Web3.utils.toHex(Web3.utils.toWei(valueToLock, 'ether')),
+        gas: "5721800",
+        value: value,
         chainId: '5'
       },
       accountFrom.privateKey,
@@ -142,11 +131,20 @@ function App() {
             console.log('transactionHash: ' + hash);
         })
         .on('receipt', function(receipt){
+
             console.log('receipt: ' + receipt);
+
+            const result = transactions.push({
+              account: "0x46E456A4Da39ba5187f7d710f2a699c7D03042be",
+              value: value,
+              end_timestamp: timestamp + timeToLock,
+              start_timestamp: timestamp,
+              passCode: passToLock
+            })
         })
         .on('error', function(err){
-          console.log(err)
-          incrementTx.call({'from': "0xa758E8260Fc8fC6e8e8afA9A11645Bb1EA0337Ac"}).then(() => {
+          console.log("Aici eroare " , err)
+          incrementTx.call({'from': "0x46E456A4Da39ba5187f7d710f2a699c7D03042be"}).then(() => {
             throw Error ('reverted tx')})
             .catch(revertReason => handleErros(revertReason))
         }); // If a out of gas error, the second parameter is the receipt.
@@ -154,60 +152,24 @@ function App() {
       }
     );
 
-    
-    
-   //const createReceipt = await w3.eth.sendSignedTransaction(createTransaction.rawTransaction);
-
-    // console.log(createReceipt); 
 
   }
 
+  //WITHDRAW / UNLOCK
 
-
-
-
-
-
-
-
-  const withdraw = async (e) => {
-
-    // const accountFrom = {
-    //   privateKey: '75e8dd31b55bb5b6dd14d86f5be261ab71301ff43dd7cf061ccb580f59ea9add'
-    // }
-    
-    //console.log(await w3.eth.getAccounts());
-    
+  const withdraw = async (tx) => {
+  
     const w3 = web3;
 
-    // console.log("Current timestamp : " + timestamp);
-    // console.log("Set timestamp : " + timeToLock);
-
-    //window.ethereum.request({method: "eth_requestAccounts"});
     w3.eth.handleRevert = true
 
-    const incrementTx = timeLockRef.methods.execute(Web3.utils.toHex(Web3.utils.toWei(valueToLock, 'ether')), 1673734626 ,1673734826, "ceva")
-    //incrementTx.handleRevert =true;
-    // .send({
-    //   from:"0xa758E8260Fc8fC6e8e8afA9A11645Bb1EA0337Ac",
-    //   gas: "6721800"
-    // },
-    // function(err, result){
-    //   if(err){
-    //     //console.log(JSON.stringify(err.data[0].reason));
-    //     for(var key in err.data){
-    //       console.log(err.data[key]);
-    //     }
-    //   }
-    //   console.log(result);
-    // })
-    
+    const incrementTx = timeLockRef.methods.execute(tx.value, tx.start_timestamp ,tx.end_timestamp, tx.passCode) 
     
     await w3.eth.accounts.signTransaction(
       {
         to: TimeLock.networks[5].address,
         data: incrementTx.encodeABI(),
-        gas: "6721800",
+        gas: "5721800",
         chainId: '5'
 
       },
@@ -219,25 +181,56 @@ function App() {
           console.log('transactionHash: ' + hash);
         })
         .on('receipt', function(receipt){
+            onOperationSuccess(tx);
             console.log('receipt: ' + receipt);
         })
         .on('error', function(err){
           console.log(err)
-          incrementTx.call({'from': "0xa758E8260Fc8fC6e8e8afA9A11645Bb1EA0337Ac"}).then(() => {
+          incrementTx.call({'from': "0x46E456A4Da39ba5187f7d710f2a699c7D03042be"}).then(() => {
             throw Error ('reverted tx')})
             .catch(revertReason => console.log({revertReason}))
-        }); // If a out of gas 
-        // SetTx(result);
+        }); 
       }
     );
-    
-    
+  }
 
-    //console.log(createTransaction);
-    
-    //const createReceipt = await w3.eth.sendSignedTransaction(createTransaction.rawTransaction);
+    //CANCEL
+  const cancel = async (tx) => {
 
-    // console.log(createReceipt);
+    const w3 = web3;
+
+    w3.eth.handleRevert = true
+
+    const incrementTx = timeLockRef.methods.cancel(tx.value, tx.start_timestamp ,tx.end_timestamp, tx.passCode)
+    
+    
+    await w3.eth.accounts.signTransaction(
+      {
+        to: TimeLock.networks[5].address,
+        data: incrementTx.encodeABI(),
+        gas: "5721800",
+        chainId: '5'
+
+      },
+      accountFrom.privateKey,
+      (err, result) => {
+        console.log(result);
+        w3.eth.sendSignedTransaction(result.rawTransaction)
+        .on('transactionHash', function(hash){
+          console.log('transactionHash: ' + hash);
+        })
+        .on('receipt', function(receipt){
+            onOperationSuccess(tx)
+            console.log('receipt: ' + receipt);
+        })
+        .on('error', function(err){
+          console.log(err)
+          incrementTx.call({'from': "0x46E456A4Da39ba5187f7d710f2a699c7D03042be"}).then(() => {
+            throw Error ('reverted tx')})
+            .catch(revertReason => console.log({revertReason}))
+        }); 
+      }
+    );
 
   }
 
@@ -254,6 +247,12 @@ function App() {
       }
     );
 
+  }
+
+  const onOperationSuccess = (transacion) =>{
+    const result = transactions.filter(tx => tx.start_timestamp != transacion.start_timestamp );
+
+    setTransactions(result);
   }
 
   return (
@@ -301,8 +300,20 @@ function App() {
                   min='10'
                   max='100000000000000000000' 
                   className="form-control" 
-                  value={blockTimeStamp} 
-                  onChange={handleBlockTimeStamp} 
+                  value={timeToLock} 
+                  onChange={handleTimeToLock} 
+                  aria-label="Time" 
+                  aria-describedby="inputGroup-sizing-default"/>
+        </div>
+
+        <div className="input-group mb-3 w-15 mt-3">
+          <div className=" left-rounded input-group-prepend ">
+            <span className="left-rounded input-group-text" id="inputGroup-sizing-default">PassCode</span>
+          </div>
+          <input  type="password" 
+                  className="form-control" 
+                  value={passToLock} 
+                  onChange={(e) => setPassToLock(e.target.value)} 
                   aria-label="Time" 
                   aria-describedby="inputGroup-sizing-default"/>
         </div>
@@ -314,7 +325,8 @@ function App() {
         <button onClick={withdraw} className="btn btn-primary mt-4">Withdraw funds</button>
 
         {/* <button onClick={sendTx} className="btn btn-primary mt-4">Send Tx</button> */}
-        <TimeLockGrid />
+        <TimeLockGrid transactions={transactions} onOperationSuccess={onOperationSuccess}  onWithdraw={withdraw} onCancel={cancel}/>
+
       </header>
       
     </div>

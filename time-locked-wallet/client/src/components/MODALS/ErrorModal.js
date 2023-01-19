@@ -5,19 +5,14 @@ import Button from 'react-bootstrap/Button';
 const ErrorModal = function(props){
 
     const [show, setShow] = React.useState(false);
-    React.useEffect(
-        function()  {
-            setShow(props.show);
-        },
-        [props.show]
-    );
+   
     const handleClose = () => setShow(false);
     const handleShow = () => setShow(true);
 
     return (
         <>
 
-            <Modal show={show} onHide={props.onColose}>
+            <Modal show={props.show} onHide={props.onColose}>
                 <div className="transparent_bg"></div>
 
                 <Modal.Header className="z_index_6">
