@@ -7,7 +7,7 @@ import TimeLock from "./static/contract/TimeLock.json"
 import TimeLockGrid from './components/TimeLockGrid';
 import Navbar from './components/Navbar';
 import ErrorModal from './components/MODALS/ErrorModal';
-
+import account from './Privatekey'
 function App() {
 
   const [data, setData] = React.useState(null);
@@ -56,7 +56,7 @@ function App() {
 
 
   const handleAccountFromChange = (e) =>{
-    setAccountFrom({privateKey: e.target.value})
+    setAccountFrom({privateKey: e.target.value, address: account.address})
   }
 
   const handleErros = (err) => {
@@ -70,7 +70,7 @@ function App() {
         
         setErrMsg(err);
       }
-      else setErrMsg("Nu aveti suficiente fonduri pentru a executa aceasta tranzactie!")
+      else setErrMsg("Eroare necunoscuta de la Blockchain!")
 
     }
 
@@ -106,7 +106,7 @@ function App() {
     console.log(timestamp);
     const value  = Web3.utils.toHex(Web3.utils.toWei(valueToLock, 'ether'));
     console.log(valueToLock);
-    const incrementTx = timeLockRef.methods.queue(value, timestamp , timestamp + timeToLock, passToLock);
+    const incrementTx = timeLockRef.methods.queue(value, timestamp + timeToLock, timestamp , passToLock);
     w3.eth.handleRevert = true
    
     await w3.eth.accounts.signTransaction(
@@ -133,18 +133,20 @@ function App() {
         .on('receipt', function(receipt){
 
             console.log('receipt: ' + receipt);
-
-            const result = transactions.push({
-              account: "0x46E456A4Da39ba5187f7d710f2a699c7D03042be",
+            const reult = transactions.slice();
+            result.push({
+              account: accountFrom.address,
               value: value,
               end_timestamp: timestamp + timeToLock,
               start_timestamp: timestamp,
               passCode: passToLock
             })
+            
+            setTransactions(result);
         })
         .on('error', function(err){
           console.log("Aici eroare " , err)
-          incrementTx.call({'from': "0x46E456A4Da39ba5187f7d710f2a699c7D03042be"}).then(() => {
+          incrementTx.call({'from': accountFrom.address}).then(() => {
             throw Error ('reverted tx')})
             .catch(revertReason => handleErros(revertReason))
         }); // If a out of gas error, the second parameter is the receipt.
@@ -163,7 +165,7 @@ function App() {
 
     w3.eth.handleRevert = true
 
-    const incrementTx = timeLockRef.methods.execute(tx.value, tx.start_timestamp ,tx.end_timestamp, tx.passCode) 
+    const incrementTx = timeLockRef.methods.execute(tx.value, tx.end_timestamp,tx.start_timestamp , tx.passCode) 
     
     await w3.eth.accounts.signTransaction(
       {
@@ -186,7 +188,7 @@ function App() {
         })
         .on('error', function(err){
           console.log(err)
-          incrementTx.call({'from': "0x46E456A4Da39ba5187f7d710f2a699c7D03042be"}).then(() => {
+          incrementTx.call({'from': accountFrom.address}).then(() => {
             throw Error ('reverted tx')})
             .catch(revertReason => console.log({revertReason}))
         }); 
@@ -201,7 +203,7 @@ function App() {
 
     w3.eth.handleRevert = true
 
-    const incrementTx = timeLockRef.methods.cancel(tx.value, tx.start_timestamp ,tx.end_timestamp, tx.passCode)
+    const incrementTx = timeLockRef.methods.cancel(tx.value, tx.end_timestamp, tx.start_timestamp , tx.passCode)
     
     
     await w3.eth.accounts.signTransaction(
@@ -225,7 +227,7 @@ function App() {
         })
         .on('error', function(err){
           console.log(err)
-          incrementTx.call({'from': "0x46E456A4Da39ba5187f7d710f2a699c7D03042be"}).then(() => {
+          incrementTx.call({'from': accountFrom.address}).then(() => {
             throw Error ('reverted tx')})
             .catch(revertReason => console.log({revertReason}))
         }); 

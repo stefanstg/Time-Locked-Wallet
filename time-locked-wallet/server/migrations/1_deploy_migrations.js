@@ -1,6 +1,5 @@
 const Migrations = artifacts.require("Migrations");
-const AccountInfo = artifacts.require("AccountInfo");
-const TimeLock = artifacts.require("TimeLock");
+const TimeL = artifacts.require("TimeL");
 
 // const ERC20 = artifacts.require("ERC20");
 // const SafeMath = artifacts.require("SafeMath");
@@ -11,11 +10,9 @@ const TimeLock = artifacts.require("TimeLock");
 
 
 module.exports = function(deployer){
-    deployer.deploy(AccountInfo);
-
     deployer.deploy(Migrations);
 
-    deployer.deploy(TimeLock)
+    deployer.deploy(TimeL)
 
     // deployer.deploy(SafeMath);
     // deployer.deploy(TimeLock);

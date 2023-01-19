@@ -10,7 +10,7 @@ error TimestampNotPassedError(uint blockTimestmap, uint timestamp);
 error TxFailedError();
 error NoValidAddress(address _target);
 
-contract TimeLock {
+contract TimeL {
     
 
     event Queue(

@@ -17,8 +17,7 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function",
-      "constant": true
+      "type": "function"
     },
     {
       "inputs": [
@@ -37,8 +36,7 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function",
-      "constant": true
+      "type": "function"
     }
   ],
   "metadata": "{\"compiler\":{\"version\":\"0.8.16+commit.07a7930e\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_sender\",\"type\":\"address\"}],\"name\":\"getBalanceOf\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"project:/contracts/AccountInfo.sol\":\"AccountInfo\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"project:/contracts/AccountInfo.sol\":{\"keccak256\":\"0x57a18cb6e39caeb3f6b8b07431a20ca56690ab211b6dd49101befaeed9d62bb8\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://541163764cb3f3dedf68c061d8789aff962dc8f75ac50f2242d4926bdf5b92a6\",\"dweb:/ipfs/QmaLALcf7eNdnJ9hkbNXZfTjh3khius8dChqFSkvSCikdU\"]}},\"version\":1}",
@@ -1395,8 +1393,7 @@
     }
   },
   "schemaVersion": "3.4.11",
-  "updatedAt": "2023-01-17T18:24:26.867Z",
-  "networkType": "ethereum",
+  "updatedAt": "2023-01-19T10:44:25.569Z",
   "devdoc": {
     "kind": "dev",
     "methods": {},
